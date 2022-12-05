@@ -13,6 +13,7 @@ enable_testing()
 add_executable(
     libtest 
     src/quadtree.cpp
+    src/rank.cpp
 )
 
 target_link_libraries(
