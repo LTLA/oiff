@@ -1,0 +1,18 @@
+Package: oiff
+Title: Optimal Independent Filter for the FDR
+Description: 
+    Bindings for the oiff C++ library to find an optimal threshold for an
+    independent filter statistic that maximizes the number of discoveries after
+    controlling the false discovery rate with the Benjamini-Hochberg method.
+Version: 0.1.0
+Date: 2022-12-07
+License: MIT + file LICENSE
+Authors@R: person("Aaron", "Lun", role=c("aut", "cre"), email="infinite.monkeys.with.keyboards@gmail.com")
+Imports:
+    Rcpp
+LinkingTo:
+    Rcpp
+Suggests:
+    testthat
+SystemRequirements: C++17
+RoxygenNote: 7.2.2
