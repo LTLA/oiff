@@ -93,12 +93,12 @@ $(function() {
 <div class="line"><span class="comment">// Finds the optimal filter at a FDR threshold of 0.05.</span></div>
 <div class="line"><a class="code hl_struct" href="structoiff_1_1OptimizeFilter.html">oiff::OptimizeFilter</a> runner;</div>
 <div class="line">runner.<a class="code hl_variable" href="structoiff_1_1OptimizeFilter.html#a2c9f3799b773aac05d612d0fe78d790e">fdr_threshold</a> = 0.05;</div>
-<div class="line"><span class="keyword">auto</span> res = runner.<a class="code hl_function" href="structoiff_1_1OptimizeFilter.html#a1b8fc91854e95d7da678c2774771027c">run</a>(pvalues.size(), pvalues.data(), covariates.data());</div>
+<div class="line"><span class="keyword">auto</span> res = runner.<a class="code hl_function" href="structoiff_1_1OptimizeFilter.html#ae4f78a279b7a3c22d0cf8f9dba44f9b3">run</a>(pvalues.size(), pvalues.data(), covariates.data());</div>
 <div class="line">res.first; <span class="comment">// filter threshold</span></div>
 <div class="line">res.second; <span class="comment">// number of discoveries</span></div>
 <div class="line"> </div>
 <div class="line"><span class="comment">// Run with subsampling and take the average of subsample iterations.</span></div>
-<div class="line"><span class="keyword">auto</span> res2 = runner.<a class="code hl_function" href="structoiff_1_1OptimizeFilter.html#a3ffa70d589f9a756fbe4674624320764">run_subsample</a>(pvalues.size(), pvalues.data(), covariates.data());</div>
+<div class="line"><span class="keyword">auto</span> res2 = runner.<a class="code hl_function" href="structoiff_1_1OptimizeFilter.html#aff766441d0234075a24d79c89ea80bab">run_subsample</a>(pvalues.size(), pvalues.data(), covariates.data());</div>
 <div class="line"><span class="keywordtype">double</span> mean_threshold = 0;</div>
 <div class="line"><span class="keywordflow">for</span> (<span class="keyword">auto</span> x : res2) {</div>
 <div class="line">    mean_threshold += x.first;</div>
@@ -106,9 +106,9 @@ $(function() {
 <div class="line">mean_threshold /= res2.size();</div>
 <div class="ttc" id="aoiff_8hpp_html"><div class="ttname"><a href="oiff_8hpp.html">oiff.hpp</a></div><div class="ttdoc">Optimizing the independent filter for FDR control.</div></div>
 <div class="ttc" id="astructoiff_1_1OptimizeFilter_html"><div class="ttname"><a href="structoiff_1_1OptimizeFilter.html">oiff::OptimizeFilter</a></div><div class="ttdoc">Optimize the filter threshold to maximize discoveries.</div><div class="ttdef"><b>Definition:</b> oiff.hpp:257</div></div>
-<div class="ttc" id="astructoiff_1_1OptimizeFilter_html_a1b8fc91854e95d7da678c2774771027c"><div class="ttname"><a href="structoiff_1_1OptimizeFilter.html#a1b8fc91854e95d7da678c2774771027c">oiff::OptimizeFilter::run</a></div><div class="ttdeci">std::pair&lt; C, int &gt; run(size_t n, const P *pvalues, const F *filters) const</div><div class="ttdef"><b>Definition:</b> oiff.hpp:301</div></div>
 <div class="ttc" id="astructoiff_1_1OptimizeFilter_html_a2c9f3799b773aac05d612d0fe78d790e"><div class="ttname"><a href="structoiff_1_1OptimizeFilter.html#a2c9f3799b773aac05d612d0fe78d790e">oiff::OptimizeFilter::fdr_threshold</a></div><div class="ttdeci">double fdr_threshold</div><div class="ttdef"><b>Definition:</b> oiff.hpp:261</div></div>
-<div class="ttc" id="astructoiff_1_1OptimizeFilter_html_a3ffa70d589f9a756fbe4674624320764"><div class="ttname"><a href="structoiff_1_1OptimizeFilter.html#a3ffa70d589f9a756fbe4674624320764">oiff::OptimizeFilter::run_subsample</a></div><div class="ttdeci">std::vector&lt; std::pair&lt; C, int &gt; &gt; run_subsample(size_t n, const P *pvalues, const F *filters) const</div><div class="ttdef"><b>Definition:</b> oiff.hpp:319</div></div>
+<div class="ttc" id="astructoiff_1_1OptimizeFilter_html_ae4f78a279b7a3c22d0cf8f9dba44f9b3"><div class="ttname"><a href="structoiff_1_1OptimizeFilter.html#ae4f78a279b7a3c22d0cf8f9dba44f9b3">oiff::OptimizeFilter::run</a></div><div class="ttdeci">std::pair&lt; F, int &gt; run(size_t n, const P *pvalues, const F *filters) const</div><div class="ttdef"><b>Definition:</b> oiff.hpp:301</div></div>
+<div class="ttc" id="astructoiff_1_1OptimizeFilter_html_aff766441d0234075a24d79c89ea80bab"><div class="ttname"><a href="structoiff_1_1OptimizeFilter.html#aff766441d0234075a24d79c89ea80bab">oiff::OptimizeFilter::run_subsample</a></div><div class="ttdeci">std::vector&lt; std::pair&lt; F, int &gt; &gt; run_subsample(size_t n, const P *pvalues, const F *filters) const</div><div class="ttdef"><b>Definition:</b> oiff.hpp:319</div></div>
 </div><!-- fragment --><p >R users can install <a href="R/">the test package</a> and run the example:</p>
 <div class="fragment"><div class="line">library(oiff)</div>
 <div class="line">pvalues &lt;- c(runif(9900), rbeta(100, 1, 50))</div>

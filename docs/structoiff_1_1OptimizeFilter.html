@@ -90,12 +90,12 @@ $(function() {
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a1b8fc91854e95d7da678c2774771027c"><td class="memTemplParams" colspan="2">template&lt;typename P , typename F &gt; </td></tr>
-<tr class="memitem:a1b8fc91854e95d7da678c2774771027c"><td class="memTemplItemLeft" align="right" valign="top">std::pair&lt; C, int &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="structoiff_1_1OptimizeFilter.html#a1b8fc91854e95d7da678c2774771027c">run</a> (size_t n, const P *pvalues, const F *filters) const</td></tr>
-<tr class="separator:a1b8fc91854e95d7da678c2774771027c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3ffa70d589f9a756fbe4674624320764"><td class="memTemplParams" colspan="2">template&lt;typename P , typename F &gt; </td></tr>
-<tr class="memitem:a3ffa70d589f9a756fbe4674624320764"><td class="memTemplItemLeft" align="right" valign="top">std::vector&lt; std::pair&lt; C, int &gt; &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="structoiff_1_1OptimizeFilter.html#a3ffa70d589f9a756fbe4674624320764">run_subsample</a> (size_t n, const P *pvalues, const F *filters) const</td></tr>
-<tr class="separator:a3ffa70d589f9a756fbe4674624320764"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae4f78a279b7a3c22d0cf8f9dba44f9b3"><td class="memTemplParams" colspan="2">template&lt;typename P , typename F &gt; </td></tr>
+<tr class="memitem:ae4f78a279b7a3c22d0cf8f9dba44f9b3"><td class="memTemplItemLeft" align="right" valign="top">std::pair&lt; F, int &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="structoiff_1_1OptimizeFilter.html#ae4f78a279b7a3c22d0cf8f9dba44f9b3">run</a> (size_t n, const P *pvalues, const F *filters) const</td></tr>
+<tr class="separator:ae4f78a279b7a3c22d0cf8f9dba44f9b3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aff766441d0234075a24d79c89ea80bab"><td class="memTemplParams" colspan="2">template&lt;typename P , typename F &gt; </td></tr>
+<tr class="memitem:aff766441d0234075a24d79c89ea80bab"><td class="memTemplItemLeft" align="right" valign="top">std::vector&lt; std::pair&lt; F, int &gt; &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="structoiff_1_1OptimizeFilter.html#aff766441d0234075a24d79c89ea80bab">run_subsample</a> (size_t n, const P *pvalues, const F *filters) const</td></tr>
+<tr class="separator:aff766441d0234075a24d79c89ea80bab"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
@@ -114,8 +114,8 @@ Public Attributes</h2></td></tr>
 <div class="textblock"><p >Optimize the filter threshold to maximize discoveries. </p>
 <p >This class contains the core functionality in the <b>oiff</b> library. Methods are provided to identify the filter threshold that maximizes the number of discoveries at a nominal FDR threshold. This can also be done via rounds of subsampling to mitigate loss of FDR control from aggressive inclusion of discoveries. </p>
 </div><h2 class="groupheader">Member Function Documentation</h2>
-<a id="a1b8fc91854e95d7da678c2774771027c" name="a1b8fc91854e95d7da678c2774771027c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1b8fc91854e95d7da678c2774771027c">&#9670;&#160;</a></span>run()</h2>
+<a id="ae4f78a279b7a3c22d0cf8f9dba44f9b3" name="ae4f78a279b7a3c22d0cf8f9dba44f9b3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae4f78a279b7a3c22d0cf8f9dba44f9b3">&#9670;&#160;</a></span>run()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -126,7 +126,7 @@ template&lt;typename P , typename F &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">std::pair&lt; C, int &gt; oiff::OptimizeFilter::run </td>
+          <td class="memname">std::pair&lt; F, int &gt; oiff::OptimizeFilter::run </td>
           <td>(</td>
           <td class="paramtype">size_t&#160;</td>
           <td class="paramname"><em>n</em>, </td>
@@ -178,8 +178,8 @@ template&lt;typename P , typename F &gt; </div>
 
 </div>
 </div>
-<a id="a3ffa70d589f9a756fbe4674624320764" name="a3ffa70d589f9a756fbe4674624320764"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3ffa70d589f9a756fbe4674624320764">&#9670;&#160;</a></span>run_subsample()</h2>
+<a id="aff766441d0234075a24d79c89ea80bab" name="aff766441d0234075a24d79c89ea80bab"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aff766441d0234075a24d79c89ea80bab">&#9670;&#160;</a></span>run_subsample()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -190,7 +190,7 @@ template&lt;typename P , typename F &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">std::vector&lt; std::pair&lt; C, int &gt; &gt; oiff::OptimizeFilter::run_subsample </td>
+          <td class="memname">std::vector&lt; std::pair&lt; F, int &gt; &gt; oiff::OptimizeFilter::run_subsample </td>
           <td>(</td>
           <td class="paramtype">size_t&#160;</td>
           <td class="paramname"><em>n</em>, </td>
@@ -234,7 +234,7 @@ template&lt;typename P , typename F &gt; </div>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>Vector of pairs where each entry represents the results of one subsampling iteration. Each pair contains the statistics described in <code><a class="el" href="structoiff_1_1OptimizeFilter.html#a1b8fc91854e95d7da678c2774771027c">run()</a></code> for a random subsample of hypotheses. </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>Vector of pairs where each entry represents the results of one subsampling iteration. Each pair contains the statistics described in <code><a class="el" href="structoiff_1_1OptimizeFilter.html#ae4f78a279b7a3c22d0cf8f9dba44f9b3">run()</a></code> for a random subsample of hypotheses. </dd></dl>
 
 </div>
 </div>
@@ -265,7 +265,7 @@ template&lt;typename P , typename F &gt; </div>
         </tr>
       </table>
 </div><div class="memdoc">
-<p >The number of subsampling iterations to perform. Only used in <code><a class="el" href="structoiff_1_1OptimizeFilter.html#a3ffa70d589f9a756fbe4674624320764">run_subsample()</a></code>. </p>
+<p >The number of subsampling iterations to perform. Only used in <code><a class="el" href="structoiff_1_1OptimizeFilter.html#aff766441d0234075a24d79c89ea80bab">run_subsample()</a></code>. </p>
 
 </div>
 </div>
@@ -280,7 +280,7 @@ template&lt;typename P , typename F &gt; </div>
         </tr>
       </table>
 </div><div class="memdoc">
-<p >The number of threads to use during subsampling iterations. Only used in <code><a class="el" href="structoiff_1_1OptimizeFilter.html#a3ffa70d589f9a756fbe4674624320764">run_subsample()</a></code>. </p>
+<p >The number of threads to use during subsampling iterations. Only used in <code><a class="el" href="structoiff_1_1OptimizeFilter.html#aff766441d0234075a24d79c89ea80bab">run_subsample()</a></code>. </p>
 
 </div>
 </div>
@@ -295,7 +295,7 @@ template&lt;typename P , typename F &gt; </div>
         </tr>
       </table>
 </div><div class="memdoc">
-<p >The random sed to use during subsampling. Only used in <code><a class="el" href="structoiff_1_1OptimizeFilter.html#a3ffa70d589f9a756fbe4674624320764">run_subsample()</a></code>. </p>
+<p >The random sed to use during subsampling. Only used in <code><a class="el" href="structoiff_1_1OptimizeFilter.html#aff766441d0234075a24d79c89ea80bab">run_subsample()</a></code>. </p>
 
 </div>
 </div>
@@ -310,7 +310,7 @@ template&lt;typename P , typename F &gt; </div>
         </tr>
       </table>
 </div><div class="memdoc">
-<p >The proportion of the hypotheses to subsample in each iteration. Only used in <code><a class="el" href="structoiff_1_1OptimizeFilter.html#a3ffa70d589f9a756fbe4674624320764">run_subsample()</a></code>. </p>
+<p >The proportion of the hypotheses to subsample in each iteration. Only used in <code><a class="el" href="structoiff_1_1OptimizeFilter.html#aff766441d0234075a24d79c89ea80bab">run_subsample()</a></code>. </p>
 
 </div>
 </div>
