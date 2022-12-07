@@ -26,9 +26,19 @@ std::vector<double> pvalues; // fill with p-values
 std::vector<double> covariates; // fill with covariates
 
 // Finds the optimal filter at a FDR threshold of 0.05.
-auto res = oiff::find_optimal_filter(pvalues.size(), pvalues.data(), covariates.data(), 0.05);
+oiff::OptimizeFilter runner;
+runner.fdr_threshold = 0.05;
+auto res = runner.run(pvalues.size(), pvalues.data(), covariates.data());
 res.first; // filter threshold
 res.second; // number of discoveries
+
+// Run with subsampling and take the average of subsample iterations.
+auto res2 = runner.run_subsample(pvalues.size(), pvalues.data(), covariates.data());
+double mean_threshold = 0;
+for (auto x : res2) {
+    mean_threshold += x.first;
+}
+mean_threshold /= res2.size();
 ```
 
 R users can install [the test package](R/) and run the example:
@@ -39,6 +49,8 @@ pvalues <- c(runif(9900), rbeta(100, 1, 50))
 filter <- c(rnorm(9900), rnorm(100) - 2)
 findOptimalFilter(pvalues, filter)
 ```
+
+Check out the [reference documentation](https://ltla.github.io/oiff) for more details.
 
 Note that the default behavior is to retain tests with filter statistics _below_ the threshold.
 This can be reversed (e.g., to retain high-abundance genes) by negating the filter in C++ or setting `above=FALSE` in R.

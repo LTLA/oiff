@@ -8,8 +8,20 @@
 #include <cstdint>
 #include <cmath>
 
+/**
+ * @file oiff.hpp
+ * @brief Optimizing the independent filter for FDR control.
+ */
+
+/**
+ * @namespace oiff
+ * @brief Optimizing the independent filter for FDR control.
+ */
 namespace oiff {
 
+/**
+ * @cond
+ */
 struct Node {
     int p_left, p_mid, p_right;
     int jump_left = -1, jump_right = -1;
@@ -56,22 +68,35 @@ void build(int p, int location, std::vector<Node>& tree) {
     return;
 }
 
+/* In this recursion, the return value is a pair containing:
+ * 
+ * - The largest number of discoveries at the specified FDR threshold
+ *   within the interval represented by the current node.
+ * - The number of hypotheses with p-values at or below the largest
+ *   p-value in the interval represented by the current node.
+ *
+ * The first value is our desired result, but the second value needs
+ * to be returned to allow calculation of a possibly larger number of 
+ * discoveries at the parent node of the current node.
+ */
 template<typename P>
 std::pair<int, int> find_boundary(int location, const std::vector<Node>& tree, const P* pvalues, int accumulated, P threshold) {
     const auto& current = tree[location];
-    auto curp = pvalues[current.p_left];
+    auto lowestp = pvalues[current.p_left];
     int accumulated2 = accumulated + current.count;
 
     // Quitting if it doesn't work at its most optimistic, i.e., assigning
     // all points in the interval to the lowest p-value.
-    if (curp > threshold * accumulated2) {
+    if (lowestp > threshold * accumulated2) {
         return std::make_pair(0, accumulated2);
     }
 
-    // Returning the cumulative number of discoveries if we're at a terminus.
-    // This terminus is the boundary of significance for the given FDR threshold;
-    // anything lower will end up getting this adjusted p-value or better due
-    // to the cumulative minimum in the BH method.
+    // Returning the cumulative number of discoveries if we're at a terminal
+    // node. This is potentially the boundary of significance for the given FDR
+    // threshold; anything with lower p-values will end up getting this
+    // adjusted p-value (or better) due to the cumulative minimum in the BH
+    // method. Of course, we still need to check with the parent to see if
+    // there might be more discoveries at an even larger p-value threshold.
     if (current.p_right - current.p_left == 1) {
         return std::make_pair(accumulated2, accumulated2);
     }
@@ -85,7 +110,9 @@ std::pair<int, int> find_boundary(int location, const std::vector<Node>& tree, c
         accumulated = left.second;
     }
 
-    // Now checking the right side.
+    // Now checking the right side. If it gives us more discoveries, we switch
+    // 'best' to its number of discoveries. No need to update 'accumulated' as
+    // this should end up being equal to 'accumulated2' anyway.
     if (current.jump_right >= 0) {
         auto right = find_boundary(current.jump_right, tree, pvalues, accumulated, threshold);
         if (right.first) {
@@ -216,34 +243,91 @@ void slice_vector(const std::vector<T>& input, const std::vector<Chosen>& keep, 
         }
     }
 }
+/**
+ * @endcond
+ */
 
+/**
+ * @brief Optimize the filter threshold to maximize discoveries.
+ *
+ * This class contains the core functionality in the **oiff** library.
+ * Methods are provided to identify the filter threshold that maximizes the number of discoveries at a nominal FDR threshold.
+ * This can also be done via rounds of subsampling to mitigate loss of FDR control from aggressive inclusion of discoveries.
+ */
 struct OptimizeFilter {
+    /**
+     * The FDR threshold to be used.
+     */
     double fdr_threshold = 0.05;
+
+    /**
+     * The number of threads to use during subsampling iterations.
+     * Only used in `run_subsample()`.
+     */
     int num_threads = 1;
+
+    /**
+     * The number of subsampling iterations to perform.
+     * Only used in `run_subsample()`.
+     */
     int num_iterations = 100;
+
+    /**
+     * The proportion of the hypotheses to subsample in each iteration.
+     * Only used in `run_subsample()`.
+     */
     double subsample_proportion = 0.1;
+
+    /**
+     * The random sed to use during subsampling.
+     * Only used in `run_subsample()`.
+     */
     uint64_t random_seed = 42;
 
-    template<typename P, typename C>
-    std::pair<C, int> run(size_t n, const P* pvalues, const C* covariates) const {
+    /**
+     * @tparam P Floating-point type for the p-values.
+     * @tparam F Arithmetic type for the filter statistic.
+     *
+     * @param n Number of hypotheses.
+     * @param[in] pvalues Pointer to the start of an array of length `n` containing p-values for each hypothesis.
+     * @param[in] filters Pointer to the start of an array of length `n` containing the filter statistic for each hypothesis.
+     * 
+     * @return Pair containing:
+     *
+     * - The chosen filter threshold that maximises the number of discoveries at the specified `fdr_threshold`.
+     * - The aforementioned number of discoveries.
+     */
+    template<typename P, typename F>
+    std::pair<F, int> run(size_t n, const P* pvalues, const F* filters) const {
         auto porder = order(pvalues, n);
-        auto corder = order(covariates, n);
-        return find_optimal_filter(n, pvalues, covariates, porder, corder, fdr_threshold);
+        auto corder = order(filters, n);
+        return find_optimal_filter(n, pvalues, filters, porder, corder, fdr_threshold);
     }
 
-    template<typename P, typename C>
-    std::vector<std::pair<C, int> > run_subsample(size_t n, const P* pvalues, const C* covariates) const {
+    /**
+     * @tparam P Floating-point type for the p-values.
+     * @tparam F Arithmetic type for the filter statistic.
+     *
+     * @param n Number of hypotheses.
+     * @param[in] pvalues Pointer to the start of an array of length `n` containing p-values for each hypothesis.
+     * @param[in] filters Pointer to the start of an array of length `n` containing the filter statistic for each hypothesis.
+     * 
+     * @return Vector of pairs where each entry represents the results of one subsampling iteration.
+     * Each pair contains the statistics described in `run()` for a random subsample of hypotheses.
+     */
+    template<typename P, typename F>
+    std::vector<std::pair<F, int> > run_subsample(size_t n, const P* pvalues, const F* filters) const {
         auto porder = order(pvalues, n);
-        auto corder = order(covariates, n);
+        auto corder = order(filters, n);
 
         std::mt19937_64 rng(random_seed);
         size_t keep = std::ceil(n * subsample_proportion);
-        std::vector<std::pair<C, int> > output(num_iterations);
+        std::vector<std::pair<F, int> > output(num_iterations);
 
         auto executor = [&](int iteration, const std::vector<uint8_t>& s, std::vector<int>& p, std::vector<int>& c) -> void {
             slice_vector(porder, s, p);
             slice_vector(corder, s, c);
-            output[iteration] = find_optimal_filter(n, pvalues, covariates, p, c, fdr_threshold);
+            output[iteration] = find_optimal_filter(n, pvalues, filters, p, c, fdr_threshold);
         };
 
         if (num_threads == 1) {
