@@ -9,10 +9,12 @@ namespace oiff {
 struct Node {
     int p_left, p_mid, p_right;
     int jump_left = -1, jump_right = -1;
+    int count = 0;
 };
 
 void build(int p, int location, std::vector<Node>& tree) {
     auto& current = tree[location];
+    ++current.count;
     if (current.p_right - current.p_left == 1) {
         return;
     }
@@ -51,15 +53,15 @@ void build(int p, int location, std::vector<Node>& tree) {
 }
 
 template<typename P>
-int find_boundary(int location, const std::vector<Node>& tree, const P* pvalues, const int* accumulated, P threshold) {
+std::pair<int, int> find_boundary(int location, const std::vector<Node>& tree, const P* pvalues, int accumulated, P threshold) {
     const auto& current = tree[location];
     auto curp = pvalues[current.p_left];
-    int cumulative = accumulated[current.p_left];
+    int accumulated2 = accumulated + current.count;
 
     // Quitting if it doesn't work at its most optimistic, i.e., assigning
     // all points in the interval to the lowest p-value.
-    if (curp > threshold * cumulative) {
-        return 0;
+    if (curp > threshold * accumulated2) {
+        return std::make_pair(0, accumulated2);
     }
 
     // Returning the cumulative number of discoveries if we're at a terminus.
@@ -67,25 +69,27 @@ int find_boundary(int location, const std::vector<Node>& tree, const P* pvalues,
     // anything lower will end up getting this adjusted p-value or better due
     // to the cumulative minimum in the BH method.
     if (current.p_right - current.p_left == 1) {
-        return cumulative;
+        return std::make_pair(accumulated2, accumulated2);
     }
 
-    // Checking if the boundary lies on the right side first; if it's
-    // successful, we don't bother searching the left, because the right's
-    // discoveries will be a superset of those on the left.
+    // Searching the left side for the boundary. We need to do this first
+    // in order to get the cumulative sum before searching the right.
+    int best = 0;
+    if (current.jump_left >= 0) {
+        auto left = find_boundary(current.jump_left, tree, pvalues, accumulated, threshold);
+        best = left.first;
+        accumulated = left.second;
+    }
+
+    // Now checking the right side.
     if (current.jump_right >= 0) {
-        auto right_hits = find_boundary(current.jump_right, tree, pvalues, accumulated, threshold);
-        if (right_hits) {
-            return right_hits;
+        auto right = find_boundary(current.jump_right, tree, pvalues, accumulated, threshold);
+        if (right.first) {
+            best = right.first;
         }
     }
 
-    // Otherwise, searching the left side for the boundary.
-    if (current.jump_left >= 0) {
-        return find_boundary(current.jump_left, tree, pvalues, accumulated, threshold);
-    }
-
-    return 0;
+    return std::make_pair(best, accumulated2);
 }
 
 template<class Iterator>
@@ -104,32 +108,25 @@ std::vector<int> order(Iterator start, size_t n) {
 }
 
 template<typename P, typename C>
-C find_optimal_filter(size_t n, const P* pvalues, const C* covariates, P fdr_threshold) {
+std::pair<C, int> find_optimal_filter(size_t n, const P* pvalues, const C* covariates, P fdr_threshold) {
     if (!n) {
-        return 0;
+        return std::pair<C, int>(0, 0);
     }
 
     // Finding all unique p-values.
     std::vector<int> prank(n);
     std::vector<P> uniq_p;
-    std::vector<int> uniq_count;
     {
         auto porder = order(pvalues, n);
         uniq_p.reserve(n);
         uniq_p.push_back(*(pvalues + porder[0]));
-
-        uniq_count.reserve(n); 
-        uniq_count.push_back(1);
 
         int rank = 0;
         for (size_t i = 1; i < n; ++i) {
             const auto& current = *(pvalues + porder[i]);
             if (current != uniq_p.back()) {
                 uniq_p.push_back(current);
-                uniq_count.push_back(1);
                 ++rank;
-            } else {
-                ++uniq_count.back();
             }
             prank[porder[i]] = rank;
         }
@@ -151,20 +148,22 @@ C find_optimal_filter(size_t n, const P* pvalues, const C* covariates, P fdr_thr
     while (i < n) {
         auto current = covariates[corder[i]];
         do {
-            build(pvalues[corder[i]], 0, tree);
+            build(prank[corder[i]], 0, tree);
             ++i;
         } while (i < n && covariates[corder[i]] == current);
 
         // Dividing by 'i' to get the Bonferroni adjusted threshold, which is
         // then internally multiplied by the rank to get the BH threshold.
-        auto hits = find_boundary(0, tree, uniq_p.data(), uniq_count.data(), fdr_threshold / i);
-        if (hits > max_hits) {
-            max_hits = hits;
+        auto hits = find_boundary(0, tree, uniq_p.data(), 0, fdr_threshold / i);
+
+        // Using >= so that we favor a more relaxed filter, everything else being equal.
+        if (hits.first >= max_hits) {
+            max_hits = hits.first;
             cov_threshold = current;
         }
     }
 
-    return cov_threshold;
+    return std::pair<C, int>(cov_threshold, max_hits);
 }
 
 }

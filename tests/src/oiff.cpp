@@ -3,19 +3,104 @@
 
 #include <random>
 #include <vector>
+#include <algorithm>
 
-TEST(OiffTest, Basic) {
-    size_t nobs = 100;
-    std::vector<double> pvalues, covariates;
-    std::mt19937_64 rng;
+class ScenarioTest : public ::testing::TestWithParam<std::tuple<int, int> > {
+protected:
+    static std::pair<double, int> reference(const std::vector<double>& pvalues, const std::vector<double>& covariates, double threshold) {
+        size_t nobs = pvalues.size();
+        std::vector<std::pair<double, double> > combined;
+        combined.reserve(nobs);
+        for (size_t i = 0; i < nobs; ++i) {
+            combined.emplace_back(pvalues[i], covariates[i]);
+        }
+        std::sort(combined.begin(), combined.end());
+
+        int max_hits = -1;
+        double filter = 0;
+
+        std::vector<int> collected;
+        for (size_t i = 0; i < nobs; ++i) {
+            auto current = covariates[i];
+
+            collected.clear();
+            for (size_t j = 0; j < nobs; ++j) {
+                if (combined[j].second <= current) {
+                    collected.push_back(j);
+                }
+            }
+
+            int hits = 0;
+            int counter = 0;
+            auto adjusted_threshold = threshold / collected.size();
+            for (auto j : collected) {
+                ++counter;
+                if (combined[j].first / counter <= adjusted_threshold) {
+                    hits = counter;
+                }
+            }
+
+            if (hits > max_hits || (hits == max_hits && filter < current)) {
+                max_hits = hits;
+                filter = current;
+            }
+        }
+
+        return std::make_pair(filter, max_hits);
+    }
+};
+
+TEST_P(ScenarioTest, Uniform) {
+    auto param = GetParam();
+    size_t nobs = std::get<0>(param);
+    int seed = std::get<1>(param);
+
+    std::mt19937_64 rng(seed);
     std::uniform_real_distribution udist;
     std::normal_distribution ndist;
 
+    // Simulating a simple scenario with independence
+    // between the p-values and the covariates.
+    std::vector<double> pvalues, covariates;
     for (size_t i = 0; i < nobs; ++i) {
         pvalues.push_back(udist(rng));
         covariates.push_back(ndist(rng));
     }
 
     auto best = oiff::find_optimal_filter(nobs, pvalues.data(), covariates.data(), 0.05);
-    std::cout << best << std::endl;
+    auto ref = reference(pvalues, covariates, 0.05);
+    EXPECT_EQ(best, ref);
 }
+
+TEST_P(ScenarioTest, CorrelatedUniform) {
+    auto param = GetParam();
+    size_t nobs = std::get<0>(param);
+    int seed = std::get<1>(param);
+
+    std::mt19937_64 rng(seed);
+    std::uniform_real_distribution udist;
+    std::normal_distribution ndist;
+
+    std::vector<double> pvalues, covariates;
+    for (size_t i = 0; i < nobs; ++i) {
+        pvalues.push_back(udist(rng));
+        covariates.push_back(ndist(rng));
+    }
+
+    // Now the pvalues and covariates are correlated.
+    std::sort(pvalues.begin(), pvalues.end());
+    std::sort(covariates.begin(), covariates.end());
+
+    auto best = oiff::find_optimal_filter(nobs, pvalues.data(), covariates.data(), 0.05);
+    auto ref = reference(pvalues, covariates, 0.05);
+    EXPECT_EQ(best, ref);
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    Scenarios,
+    ScenarioTest,
+    ::testing::Combine(
+        ::testing::Values(100, 500, 1000), // number of observations.
+        ::testing::Values(123456, 789, 0) // seed
+    )
+);
