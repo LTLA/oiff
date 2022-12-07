@@ -10,7 +10,8 @@ findOptimalFilter(
   above = FALSE,
   threshold = 0.05,
   subsample = NULL,
-  iterations = 100
+  iterations = 100,
+  num.threads = 1
 )
 }
 \arguments{
@@ -31,7 +32,11 @@ If \code{NULL}, no subsampling is performed.}
 
 \item{iterations}{Integer scalar specifying the number of subsampling iterations to perform.
 The returned filter threshold is defined as the mean of the optimal thresholds across all iterations.
-Larger values improve the stability of the subsampled estimate at the cost of time.}
+Larger values improve the stability of the subsampled estimate at the cost of time.
+Only used if \code{subsample} is not \code{NULL}.}
+
+\item{num.threads}{Integer scalar specifying the number of threads to use for subsampling.
+Only used if \code{subsample} is not \code{NULL}.}
 }
 \value{
 A list containing \code{threshold}, the threshold to apply to \code{filter};

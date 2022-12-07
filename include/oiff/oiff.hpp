@@ -3,6 +3,10 @@
 
 #include <vector>
 #include <algorithm>
+#include <random>
+#include <thread>
+#include <cstdint>
+#include <cmath>
 
 namespace oiff {
 
@@ -108,17 +112,23 @@ std::vector<int> order(Iterator start, size_t n) {
 }
 
 template<typename P, typename C>
-std::pair<C, int> find_optimal_filter(size_t n, const P* pvalues, const C* covariates, P fdr_threshold) {
-    if (!n) {
+std::pair<C, int> find_optimal_filter(size_t n_full, const P* pvalues, const C* covariates, const std::vector<int>& porder, const std::vector<int>& corder, P fdr_threshold) {
+    // Without subsetting, n_working and n_full are the same. However, we want
+    // to easily re-use the same code after subsetting, where 'porder' and
+    // 'corder' contains a subset of the indices, while 'pvalues' and
+    // 'covariates' still contain the full dataset to avoid a copy... Hence the
+    // need to distinguish between n_full and n_working in the subsetted case.
+    size_t n_working = porder.size();
+    if (!n_working) {
         return std::pair<C, int>(0, 0);
     }
 
-    // Finding all unique p-values.
-    std::vector<int> prank(n, -1);
+    // Finding all unique p-values and their relative ranks. Note that 
+    // 'prank' is still full-length to enable easy indexing from 'corder'.
+    std::vector<int> prank(n_full, -1);
     std::vector<P> uniq_p;
     {
-        auto porder = order(pvalues, n);
-        uniq_p.reserve(n);
+        uniq_p.reserve(n_working);
 
         int rank = 0;
         auto first = *(pvalues + porder[0]);
@@ -127,7 +137,7 @@ std::pair<C, int> find_optimal_filter(size_t n, const P* pvalues, const C* covar
             prank[porder[0]] = rank;
         }
 
-        for (size_t i = 1; i < n; ++i) {
+        for (size_t i = 1; i < n_working; ++i) {
             const auto& current = *(pvalues + porder[i]);
             if (current > fdr_threshold) {
                 break;
@@ -140,20 +150,20 @@ std::pair<C, int> find_optimal_filter(size_t n, const P* pvalues, const C* covar
         }
     }
     
-    // Iteratively build tree and query for the FDR threshold at increasing
-    // covariate thresholds.
+    // Iteratively build the tree and query for the FDR threshold. Each
+    // iteration is done by increasing the covariate threshold and adding
+    // more observations with that covariate value to the tree.
     std::vector<Node> tree(1);
     tree.reserve(uniq_p.size() * 2);
     tree.back().p_left = 0;
     tree.back().p_right = uniq_p.size();
     tree.back().p_mid = uniq_p.size() / 2;
 
-    auto corder = order(covariates, n);
     size_t i = 0;
     int max_hits = -1;
     C cov_threshold = 0;
 
-    while (i < n) {
+    while (i < n_working) {
         auto curcov = covariates[corder[i]];
         do {
             auto curprank = prank[corder[i]];
@@ -161,7 +171,7 @@ std::pair<C, int> find_optimal_filter(size_t n, const P* pvalues, const C* covar
                 build(curprank, 0, tree);
             }
             ++i;
-        } while (i < n && covariates[corder[i]] == curcov);
+        } while (i < n_working && covariates[corder[i]] == curcov);
 
         // Dividing by 'i' to get the Bonferroni adjusted threshold, which is
         // then internally multiplied by the rank to get the BH threshold.
@@ -176,6 +186,101 @@ std::pair<C, int> find_optimal_filter(size_t n, const P* pvalues, const C* covar
 
     return std::pair<C, int>(cov_threshold, max_hits);
 }
+
+template<class Engine>
+double quick_uniform01(Engine& eng) {
+    // Don't need to worry about checks for the edge case of returning 1
+    // due to numerical imprecision after division; this won't break the 
+    // use of this function in sample().
+    return static_cast<double>(eng() - Engine::min()) / (static_cast<double>(Engine::max() - Engine::min()) + 1.0);
+}
+
+template<class Engine> 
+void sample(size_t n, size_t s, std::vector<uint8_t>& chosen, Engine& eng) {
+    std::fill(chosen.begin(), chosen.end(), static_cast<uint8_t>(0));
+    for (size_t i = 0; i < n && s; ++i) {
+        const double threshold = static_cast<double>(s)/(n - i);
+        if (threshold >= 1 || quick_uniform01(eng) <= threshold) {
+            chosen[i] = 1;
+            --s;
+        }
+    }
+}
+
+template<typename T, typename Chosen>
+void slice_vector(const std::vector<T>& input, const std::vector<Chosen>& keep, std::vector<T>& output) {
+    output.clear();
+    for (auto i : input) {
+        if (keep[i]) {
+            output.push_back(i);
+        }
+    }
+}
+
+struct OptimizeFilter {
+    double fdr_threshold = 0.05;
+    int num_threads = 1;
+    int num_iterations = 100;
+    double subsample_proportion = 0.1;
+    uint64_t random_seed = 42;
+
+    template<typename P, typename C>
+    std::pair<C, int> run(size_t n, const P* pvalues, const C* covariates) const {
+        auto porder = order(pvalues, n);
+        auto corder = order(covariates, n);
+        return find_optimal_filter(n, pvalues, covariates, porder, corder, fdr_threshold);
+    }
+
+    template<typename P, typename C>
+    std::vector<std::pair<C, int> > run_subsample(size_t n, const P* pvalues, const C* covariates) const {
+        auto porder = order(pvalues, n);
+        auto corder = order(covariates, n);
+
+        std::mt19937_64 rng(random_seed);
+        size_t keep = std::ceil(n * subsample_proportion);
+        std::vector<std::pair<C, int> > output(num_iterations);
+
+        auto executor = [&](int iteration, const std::vector<uint8_t>& s, std::vector<int>& p, std::vector<int>& c) -> void {
+            slice_vector(porder, s, p);
+            slice_vector(corder, s, c);
+            output[iteration] = find_optimal_filter(n, pvalues, covariates, p, c, fdr_threshold);
+        };
+
+        if (num_threads == 1) {
+            std::vector<uint8_t> selected(n);
+            std::vector<int> porder2, corder2;
+            for (int it = 0; it < num_iterations; ++it) {
+                sample(n, keep, selected, rng);
+                executor(it, selected, porder2, corder2);
+            }
+
+        } else {
+            std::vector<std::vector<uint8_t> > selected(num_threads, std::vector<uint8_t>(n));
+            std::vector<std::vector<int> > porder2(num_threads), corder2(num_threads);
+            std::vector<std::thread> threads(num_threads);
+
+            for (int it = 0; it < num_iterations; ++it) {
+                size_t thread_id = it % num_threads;
+                if (it >= num_threads) {
+                    threads[thread_id].join();
+                }
+                sample(n, keep, selected[thread_id], rng); // RNG'ing is done in serial for simplicity.
+
+                threads[thread_id] = std::thread(
+                    [&](int iteration, size_t tid) -> void { executor(iteration, selected[tid], porder2[tid], corder2[tid]); },
+                    it, thread_id
+                );
+            }
+
+            // Joining any threads that are still running.
+            for (int t = 0; t < std::min(num_iterations, num_threads); ++t) {
+                threads[t].join();
+            }
+        }
+
+        return output;
+    }
+};
 
 }
 

@@ -16,6 +16,9 @@
 #' @param iterations Integer scalar specifying the number of subsampling iterations to perform.
 #' The returned filter threshold is defined as the mean of the optimal thresholds across all iterations.
 #' Larger values improve the stability of the subsampled estimate at the cost of time.
+#' Only used if \code{subsample} is not \code{NULL}.
+#' @param num.threads Integer scalar specifying the number of threads to use for subsampling.
+#' Only used if \code{subsample} is not \code{NULL}.
 #'
 #' @return A list containing \code{threshold}, the threshold to apply to \code{filter};
 #' and \code{number}, the number of discoveries after applying the BH method at this filter threshold.
@@ -32,7 +35,7 @@
 #' @importFrom Rcpp sourceCpp
 #' @importFrom stats p.adjust
 #' @useDynLib oiff
-findOptimalFilter <- function(pvalues, filter, above=FALSE, threshold=0.05, subsample=NULL, iterations=100) {
+findOptimalFilter <- function(pvalues, filter, above=FALSE, threshold=0.05, subsample=NULL, iterations=100, num.threads=1) {
     if (above) {
         filter <- -filter;
     }
@@ -40,14 +43,13 @@ findOptimalFilter <- function(pvalues, filter, above=FALSE, threshold=0.05, subs
     if (is.null(subsample)) {
         res <- find_optimal_filter(pvalues, filter, threshold)
     } else {
-        thresholds <- numeric(iterations)
-        for (i in seq_len(iterations)) {
-            keep <- sample(length(pvalues), length(pvalues) * subsample)
-            res <- find_optimal_filter(pvalues[keep], filter[keep], threshold)
-            thresholds[i] <- res$threshold
-        }
+        sub <- find_optimal_filter_subsample(pvalues, filter, threshold, 
+            subsample_proportion = subsample, 
+            num_iterations = iterations, 
+            random_seed = sample(.Machine$integer.max, 1),
+            num_threads = num.threads)
 
-        res <- list(threshold = mean(thresholds))
+        res <- list(threshold = mean(sub$threshold))
         res$number <- sum(p.adjust(pvalues[filter <= res$threshold], method="BH") <= threshold)
     }
 

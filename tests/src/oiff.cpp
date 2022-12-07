@@ -67,7 +67,7 @@ TEST_P(ScenarioTest, Uniform) {
         covariates.push_back(ndist(rng));
     }
 
-    auto best = oiff::find_optimal_filter(nobs, pvalues.data(), covariates.data(), 0.05);
+    auto best = oiff::OptimizeFilter().run(nobs, pvalues.data(), covariates.data());
     auto ref = reference(pvalues, covariates, 0.05);
     EXPECT_EQ(best, ref);
 }
@@ -91,7 +91,7 @@ TEST_P(ScenarioTest, PerfectCorrelation) {
     std::sort(pvalues.begin(), pvalues.end());
     std::sort(covariates.begin(), covariates.end());
 
-    auto best = oiff::find_optimal_filter(nobs, pvalues.data(), covariates.data(), 0.05);
+    auto best = oiff::OptimizeFilter().run(nobs, pvalues.data(), covariates.data());
     auto ref = reference(pvalues, covariates, 0.05);
     EXPECT_EQ(best, ref);
 }
@@ -111,7 +111,7 @@ TEST_P(ScenarioTest, ImperfectCorrelation) {
         covariates.push_back(ndist(rng) * 0.01 + static_cast<double>(i) / nobs);
     }
 
-    auto best = oiff::find_optimal_filter(nobs, pvalues.data(), covariates.data(), 0.05);
+    auto best = oiff::OptimizeFilter().run(nobs, pvalues.data(), covariates.data());
     auto ref = reference(pvalues, covariates, 0.05);
     EXPECT_EQ(best, ref);
 }
@@ -138,7 +138,7 @@ TEST_P(ScenarioTest, LowerCovariates) {
         covariates.push_back(ndist(rng) - 1);
     }
 
-    auto best = oiff::find_optimal_filter(nobs, pvalues.data(), covariates.data(), 0.05);
+    auto best = oiff::OptimizeFilter().run(nobs, pvalues.data(), covariates.data());
     auto ref = reference(pvalues, covariates, 0.05);
     EXPECT_EQ(best, ref);
 }
@@ -165,9 +165,80 @@ TEST_P(ScenarioTest, HigherCovariates) {
         covariates.push_back(ndist(rng) + 1);
     }
 
-    auto best = oiff::find_optimal_filter(nobs, pvalues.data(), covariates.data(), 0.05);
+    auto best = oiff::OptimizeFilter().run(nobs, pvalues.data(), covariates.data());
     auto ref = reference(pvalues, covariates, 0.05);
     EXPECT_EQ(best, ref);
+}
+
+TEST_P(ScenarioTest, Subsampling) {
+    auto param = GetParam();
+    size_t nobs = std::get<0>(param);
+    int seed = std::get<1>(param);
+
+    // Just re-using a left-skewed distribution.
+    std::mt19937_64 rng(seed);
+    std::uniform_real_distribution udist;
+    std::normal_distribution ndist;
+
+    std::vector<double> pvalues, covariates;
+    size_t most = nobs * 0.5;
+    for (size_t i = 0; i < most; ++i) {
+        pvalues.push_back(udist(rng));
+        covariates.push_back(ndist(rng));
+    }
+
+    for (size_t i = 0; i < nobs - most; ++i) {
+        pvalues.push_back(udist(rng)/50);
+        covariates.push_back(ndist(rng) - 1);
+    }
+
+    // Checking against the reference just in case.
+    auto best = oiff::OptimizeFilter().run(nobs, pvalues.data(), covariates.data());
+    auto ref = reference(pvalues, covariates, 0.05);
+    EXPECT_EQ(best, ref);
+
+    // Checking against subsampling with 100% retention.
+    {
+        oiff::OptimizeFilter runner;
+        runner.subsample_proportion = 1;
+        runner.num_iterations = 1;
+        auto res = runner.run_subsample(nobs, pvalues.data(), covariates.data());
+        EXPECT_EQ(res.size(), 1);
+        EXPECT_EQ(best, res[0]);
+    }
+
+    // Checking against subsampling with 50% retention.
+    {
+        oiff::OptimizeFilter runner;
+        runner.subsample_proportion = 0.5;
+        auto res = runner.run_subsample(nobs, pvalues.data(), covariates.data());
+        EXPECT_EQ(res.size(), runner.num_iterations);
+
+        std::mt19937_64 rng(runner.random_seed);
+        size_t keep = std::ceil(nobs * runner.subsample_proportion);
+        std::vector<uint8_t> selected(nobs);
+        std::vector<double> subp, subc;
+
+        for (int it = 0; it < runner.num_iterations; ++it) {
+            oiff::sample(nobs, keep, selected, rng);
+
+            subp.clear();
+            subc.clear();
+            for (size_t i = 0; i < nobs; ++i) {
+                if (selected[i]) {
+                    subp.push_back(pvalues[i]);
+                    subc.push_back(covariates[i]);
+                }
+            }
+
+            auto manual = runner.run(subp.size(), subp.data(), subc.data());
+            EXPECT_EQ(manual, res[it]);
+        }
+
+        runner.num_threads = 3;
+        auto par = runner.run_subsample(nobs, pvalues.data(), covariates.data());
+        EXPECT_EQ(par, res);
+    }
 }
 
 INSTANTIATE_TEST_SUITE_P(

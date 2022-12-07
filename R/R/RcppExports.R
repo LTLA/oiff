@@ -5,3 +5,7 @@ find_optimal_filter <- function(pvalues, covariates, threshold) {
     .Call('_oiff_find_optimal_filter', PACKAGE = 'oiff', pvalues, covariates, threshold)
 }
 
+find_optimal_filter_subsample <- function(pvalues, covariates, threshold, subsample_proportion, num_iterations, random_seed, num_threads) {
+    .Call('_oiff_find_optimal_filter_subsample', PACKAGE = 'oiff', pvalues, covariates, threshold, subsample_proportion, num_iterations, random_seed, num_threads)
+}
+
