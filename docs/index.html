@@ -105,17 +105,16 @@ $(function() {
 <div class="line">}</div>
 <div class="line">mean_threshold /= res2.size();</div>
 <div class="ttc" id="aoiff_8hpp_html"><div class="ttname"><a href="oiff_8hpp.html">oiff.hpp</a></div><div class="ttdoc">Optimizing the independent filter for FDR control.</div></div>
-<div class="ttc" id="astructoiff_1_1OptimizeFilter_html"><div class="ttname"><a href="structoiff_1_1OptimizeFilter.html">oiff::OptimizeFilter</a></div><div class="ttdoc">Optimize the filter threshold to maximize discoveries.</div><div class="ttdef"><b>Definition:</b> oiff.hpp:257</div></div>
-<div class="ttc" id="astructoiff_1_1OptimizeFilter_html_a2c9f3799b773aac05d612d0fe78d790e"><div class="ttname"><a href="structoiff_1_1OptimizeFilter.html#a2c9f3799b773aac05d612d0fe78d790e">oiff::OptimizeFilter::fdr_threshold</a></div><div class="ttdeci">double fdr_threshold</div><div class="ttdef"><b>Definition:</b> oiff.hpp:261</div></div>
-<div class="ttc" id="astructoiff_1_1OptimizeFilter_html_ae4f78a279b7a3c22d0cf8f9dba44f9b3"><div class="ttname"><a href="structoiff_1_1OptimizeFilter.html#ae4f78a279b7a3c22d0cf8f9dba44f9b3">oiff::OptimizeFilter::run</a></div><div class="ttdeci">std::pair&lt; F, int &gt; run(size_t n, const P *pvalues, const F *filters) const</div><div class="ttdef"><b>Definition:</b> oiff.hpp:301</div></div>
-<div class="ttc" id="astructoiff_1_1OptimizeFilter_html_aff766441d0234075a24d79c89ea80bab"><div class="ttname"><a href="structoiff_1_1OptimizeFilter.html#aff766441d0234075a24d79c89ea80bab">oiff::OptimizeFilter::run_subsample</a></div><div class="ttdeci">std::vector&lt; std::pair&lt; F, int &gt; &gt; run_subsample(size_t n, const P *pvalues, const F *filters) const</div><div class="ttdef"><b>Definition:</b> oiff.hpp:319</div></div>
+<div class="ttc" id="astructoiff_1_1OptimizeFilter_html"><div class="ttname"><a href="structoiff_1_1OptimizeFilter.html">oiff::OptimizeFilter</a></div><div class="ttdoc">Optimize the filter threshold to maximize discoveries.</div><div class="ttdef"><b>Definition:</b> oiff.hpp:263</div></div>
+<div class="ttc" id="astructoiff_1_1OptimizeFilter_html_a2c9f3799b773aac05d612d0fe78d790e"><div class="ttname"><a href="structoiff_1_1OptimizeFilter.html#a2c9f3799b773aac05d612d0fe78d790e">oiff::OptimizeFilter::fdr_threshold</a></div><div class="ttdeci">double fdr_threshold</div><div class="ttdef"><b>Definition:</b> oiff.hpp:267</div></div>
+<div class="ttc" id="astructoiff_1_1OptimizeFilter_html_ae4f78a279b7a3c22d0cf8f9dba44f9b3"><div class="ttname"><a href="structoiff_1_1OptimizeFilter.html#ae4f78a279b7a3c22d0cf8f9dba44f9b3">oiff::OptimizeFilter::run</a></div><div class="ttdeci">std::pair&lt; F, int &gt; run(size_t n, const P *pvalues, const F *filters) const</div><div class="ttdef"><b>Definition:</b> oiff.hpp:313</div></div>
+<div class="ttc" id="astructoiff_1_1OptimizeFilter_html_aff766441d0234075a24d79c89ea80bab"><div class="ttname"><a href="structoiff_1_1OptimizeFilter.html#aff766441d0234075a24d79c89ea80bab">oiff::OptimizeFilter::run_subsample</a></div><div class="ttdeci">std::vector&lt; std::pair&lt; F, int &gt; &gt; run_subsample(size_t n, const P *pvalues, const F *filters) const</div><div class="ttdef"><b>Definition:</b> oiff.hpp:331</div></div>
 </div><!-- fragment --><p >R users can install <a href="R/">the test package</a> and run the example:</p>
 <div class="fragment"><div class="line">library(oiff)</div>
 <div class="line">pvalues &lt;- c(runif(9900), rbeta(100, 1, 50))</div>
 <div class="line">filter &lt;- c(rnorm(9900), rnorm(100) - 2)</div>
 <div class="line">findOptimalFilter(pvalues, filter)</div>
 </div><!-- fragment --><p >Check out the <a href="https://ltla.github.io/oiff">reference documentation</a> for more details.</p>
-<p >Note that the default behavior is to retain tests with filter statistics <em>below</em> the threshold. This can be reversed (e.g., to retain high-abundance genes) by negating the filter in C++ or setting <code>above=FALSE</code> in R.</p>
 <h1>Building projects</h1>
 <p >If you're using CMake, you just need to add something like this to your <code>CMakeLists.txt</code>:</p>
 <div class="fragment"><div class="line">include(FetchContent)</div>

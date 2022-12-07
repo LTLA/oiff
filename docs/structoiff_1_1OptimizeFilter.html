@@ -109,6 +109,8 @@ Public Attributes</h2></td></tr>
 <tr class="separator:a7dde95128fc14d28fd6116c1cc01b251"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6e955f7788fe6b3ed4fe2c47afa3e95d"><td class="memItemLeft" align="right" valign="top">uint64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoiff_1_1OptimizeFilter.html#a6e955f7788fe6b3ed4fe2c47afa3e95d">random_seed</a> = 42</td></tr>
 <tr class="separator:a6e955f7788fe6b3ed4fe2c47afa3e95d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6c4a446b10d0188c70437ec860fde160"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structoiff_1_1OptimizeFilter.html#a6c4a446b10d0188c70437ec860fde160">retain_larger</a> = false</td></tr>
+<tr class="separator:a6c4a446b10d0188c70437ec860fde160"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p >Optimize the filter threshold to maximize discoveries. </p>
@@ -296,6 +298,21 @@ template&lt;typename P , typename F &gt; </div>
       </table>
 </div><div class="memdoc">
 <p >The random sed to use during subsampling. Only used in <code><a class="el" href="structoiff_1_1OptimizeFilter.html#aff766441d0234075a24d79c89ea80bab">run_subsample()</a></code>. </p>
+
+</div>
+</div>
+<a id="a6c4a446b10d0188c70437ec860fde160" name="a6c4a446b10d0188c70437ec860fde160"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6c4a446b10d0188c70437ec860fde160">&#9670;&#160;</a></span>retain_larger</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool oiff::OptimizeFilter::retain_larger = false</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p >Whether the filtering should retain larger values of the filter statistic. By default, the filtering involves retaining values at or below the returned filter threshold. </p>
 
 </div>
 </div>
