@@ -9,6 +9,13 @@
 #' @param above Logical scalar indicating whether to retain hypotheses with \code{filter} above the threshold.
 #' By default, lower values of \code{filter} are retained when choosing a filter statistic.
 #' @param threshold Numeric scalar specifying the FDR threshold to use.
+#' @param subsample Numeric scalar between 0 and 1 specifying the proportion of hypotheses to use for subsampling.
+#' The optimal filter threshold is then estimated from the sampled subset instead of the full dataset.
+#' This mitigates loss of FDR control from p-value-dependent adjustment of the filter threshold.
+#' If \code{NULL}, no subsampling is performed.
+#' @param iterations Integer scalar specifying the number of subsampling iterations to perform.
+#' The returned filter threshold is defined as the mean of the optimal thresholds across all iterations.
+#' Larger values improve the stability of the subsampled estimate at the cost of time.
 #'
 #' @return A list containing \code{threshold}, the threshold to apply to \code{filter};
 #' and \code{number}, the number of discoveries after applying the BH method at this filter threshold.
@@ -16,19 +23,33 @@
 #' @author Aaron Lun
 #'
 #' @examples
-#' pvalues <- c(runif(9900), rbeta(100, 1, 50))
+#' pvalues <- c(runif(9900), rbeta(100, 1, 500))
 #' filter <- c(rnorm(9900), rnorm(100) + 2)
 #' findOptimalFilter(pvalues, filter, above=TRUE)
+#' findOptimalFilter(pvalues, filter, above=TRUE, subsample=0.1)
 #'
 #' @export
 #' @importFrom Rcpp sourceCpp
+#' @importFrom stats p.adjust
 #' @useDynLib oiff
-findOptimalFilter <- function(pvalues, filter, above=FALSE, threshold=0.05) {
+findOptimalFilter <- function(pvalues, filter, above=FALSE, threshold=0.05, subsample=NULL, iterations=100) {
     if (above) {
         filter <- -filter;
     }
 
-    res <- find_optimal_filter(pvalues, filter, threshold)
+    if (is.null(subsample)) {
+        res <- find_optimal_filter(pvalues, filter, threshold)
+    } else {
+        thresholds <- numeric(iterations)
+        for (i in seq_len(iterations)) {
+            keep <- sample(length(pvalues), length(pvalues) * subsample)
+            res <- find_optimal_filter(pvalues[keep], filter[keep], threshold)
+            thresholds[i] <- res$threshold
+        }
+
+        res <- list(threshold = mean(thresholds))
+        res$number <- sum(p.adjust(pvalues[filter <= res$threshold], method="BH") <= threshold)
+    }
 
     if (above) {
         res$threshold <- -res$threshold

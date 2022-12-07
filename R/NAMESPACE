@@ -2,4 +2,5 @@
 
 export(findOptimalFilter)
 importFrom(Rcpp,sourceCpp)
+importFrom(stats,p.adjust)
 useDynLib(oiff)

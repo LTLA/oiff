@@ -4,7 +4,14 @@
 \alias{findOptimalFilter}
 \title{Find the optimal filter threshold}
 \usage{
-findOptimalFilter(pvalues, filter, above = FALSE, threshold = 0.05)
+findOptimalFilter(
+  pvalues,
+  filter,
+  above = FALSE,
+  threshold = 0.05,
+  subsample = NULL,
+  iterations = 100
+)
 }
 \arguments{
 \item{pvalues}{Numeric vector of p-values, one for each hypothesis.}
@@ -16,6 +23,15 @@ containing the filter statistic for each hypothesis.}
 By default, lower values of \code{filter} are retained when choosing a filter statistic.}
 
 \item{threshold}{Numeric scalar specifying the FDR threshold to use.}
+
+\item{subsample}{Numeric scalar between 0 and 1 specifying the proportion of hypotheses to use for subsampling.
+The optimal filter threshold is then estimated from the sampled subset instead of the full dataset.
+This mitigates loss of FDR control from p-value-dependent adjustment of the filter threshold.
+If \code{NULL}, no subsampling is performed.}
+
+\item{iterations}{Integer scalar specifying the number of subsampling iterations to perform.
+The returned filter threshold is defined as the mean of the optimal thresholds across all iterations.
+Larger values improve the stability of the subsampled estimate at the cost of time.}
 }
 \value{
 A list containing \code{threshold}, the threshold to apply to \code{filter};
@@ -26,9 +42,10 @@ Find the threshold on an independent filter statistic that maximizes the number 
 after applying the Benjamini-Hochberg method to control the false discovery rate.
 }
 \examples{
-pvalues <- c(runif(9900), rbeta(100, 1, 50))
+pvalues <- c(runif(9900), rbeta(100, 1, 500))
 filter <- c(rnorm(9900), rnorm(100) + 2)
 findOptimalFilter(pvalues, filter, above=TRUE)
+findOptimalFilter(pvalues, filter, above=TRUE, subsample=0.1)
 
 }
 \author{
