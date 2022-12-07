@@ -114,16 +114,24 @@ std::pair<C, int> find_optimal_filter(size_t n, const P* pvalues, const C* covar
     }
 
     // Finding all unique p-values.
-    std::vector<int> prank(n);
+    std::vector<int> prank(n, -1);
     std::vector<P> uniq_p;
     {
         auto porder = order(pvalues, n);
         uniq_p.reserve(n);
-        uniq_p.push_back(*(pvalues + porder[0]));
 
         int rank = 0;
+        auto first = *(pvalues + porder[0]);
+        if (first <= fdr_threshold) {
+            uniq_p.push_back(first);
+            prank[porder[0]] = rank;
+        }
+
         for (size_t i = 1; i < n; ++i) {
             const auto& current = *(pvalues + porder[i]);
+            if (current > fdr_threshold) {
+                break;
+            }
             if (current != uniq_p.back()) {
                 uniq_p.push_back(current);
                 ++rank;
@@ -135,7 +143,7 @@ std::pair<C, int> find_optimal_filter(size_t n, const P* pvalues, const C* covar
     // Iteratively build tree and query for the FDR threshold at increasing
     // covariate thresholds.
     std::vector<Node> tree(1);
-    tree.reserve(n * 2);
+    tree.reserve(uniq_p.size() * 2);
     tree.back().p_left = 0;
     tree.back().p_right = uniq_p.size();
     tree.back().p_mid = uniq_p.size() / 2;
@@ -146,11 +154,14 @@ std::pair<C, int> find_optimal_filter(size_t n, const P* pvalues, const C* covar
     C cov_threshold = 0;
 
     while (i < n) {
-        auto current = covariates[corder[i]];
+        auto curcov = covariates[corder[i]];
         do {
-            build(prank[corder[i]], 0, tree);
+            auto curprank = prank[corder[i]];
+            if (curprank >= 0) {
+                build(curprank, 0, tree);
+            }
             ++i;
-        } while (i < n && covariates[corder[i]] == current);
+        } while (i < n && covariates[corder[i]] == curcov);
 
         // Dividing by 'i' to get the Bonferroni adjusted threshold, which is
         // then internally multiplied by the rank to get the BH threshold.
@@ -159,7 +170,7 @@ std::pair<C, int> find_optimal_filter(size_t n, const P* pvalues, const C* covar
         // Using >= so that we favor a more relaxed filter, everything else being equal.
         if (hits.first >= max_hits) {
             max_hits = hits.first;
-            cov_threshold = current;
+            cov_threshold = curcov;
         }
     }
 
