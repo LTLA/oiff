@@ -52,9 +52,6 @@ findOptimalFilter(pvalues, filter)
 
 Check out the [reference documentation](https://ltla.github.io/oiff) for more details.
 
-Note that the default behavior is to retain tests with filter statistics _below_ the threshold.
-This can be reversed (e.g., to retain high-abundance genes) by negating the filter in C++ or setting `above=FALSE` in R.
-
 ## Building projects 
 
 If you're using CMake, you just need to add something like this to your `CMakeLists.txt`:

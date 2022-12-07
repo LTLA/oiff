@@ -165,9 +165,20 @@ TEST_P(ScenarioTest, HigherCovariates) {
         covariates.push_back(ndist(rng) + 1);
     }
 
-    auto best = oiff::OptimizeFilter().run(nobs, pvalues.data(), covariates.data());
+    oiff::OptimizeFilter runner;
+    auto best = runner.run(nobs, pvalues.data(), covariates.data());
     auto ref = reference(pvalues, covariates, 0.05);
     EXPECT_EQ(best, ref);
+
+    // What happpens if we retain the larger values instead?
+    runner.retain_larger = true;
+    auto revbest = runner.run(nobs, pvalues.data(), covariates.data());
+    for (auto& x : covariates) {
+        x *= -1;
+    }
+    auto revref = reference(pvalues, covariates, 0.05);
+    revref.first *= -1;
+    EXPECT_EQ(revbest, revref);
 }
 
 TEST_P(ScenarioTest, Subsampling) {

@@ -36,25 +36,20 @@
 #' @importFrom stats p.adjust
 #' @useDynLib oiff
 findOptimalFilter <- function(pvalues, filter, above=FALSE, threshold=0.05, subsample=NULL, iterations=100, num.threads=1) {
-    if (above) {
-        filter <- -filter;
-    }
+    args <- list(pvalues=pvalues, covariates=filter, threshold=threshold, larger=above)
 
     if (is.null(subsample)) {
-        res <- find_optimal_filter(pvalues, filter, threshold)
+        res <- do.call(find_optimal_filter, args)
     } else {
-        sub <- find_optimal_filter_subsample(pvalues, filter, threshold, 
-            subsample_proportion = subsample, 
-            num_iterations = iterations, 
-            random_seed = sample(.Machine$integer.max, 1),
-            num_threads = num.threads)
+        args$subsample_proportion <- subsample
+        args$num_iterations <- iterations
+        args$random_seed <- sample(.Machine$integer.max, 1)
+        args$num_threads <- num.threads
+        sub <- do.call(find_optimal_filter_subsample, args)
 
         res <- list(threshold = mean(sub$threshold))
-        res$number <- sum(p.adjust(pvalues[filter <= res$threshold], method="BH") <= threshold)
-    }
-
-    if (above) {
-        res$threshold <- -res$threshold
+        keep <- if (above) filter >= res$threshold else filter <= res$threshold
+        res$number <- sum(p.adjust(pvalues[keep], method="BH") <= threshold)
     }
 
     res

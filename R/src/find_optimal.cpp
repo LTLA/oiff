@@ -2,7 +2,7 @@
 #include "oiff/oiff.hpp"
 
 // [[Rcpp::export(rng=false)]]
-Rcpp::List find_optimal_filter(Rcpp::NumericVector pvalues, Rcpp::NumericVector covariates, double threshold) {
+Rcpp::List find_optimal_filter(Rcpp::NumericVector pvalues, Rcpp::NumericVector covariates, double threshold, bool larger) {
     size_t n = pvalues.size();
     if (n != static_cast<size_t>(covariates.size())) {
         throw std::runtime_error("'pvalues' and 'covariates' should have the same length");
@@ -10,6 +10,7 @@ Rcpp::List find_optimal_filter(Rcpp::NumericVector pvalues, Rcpp::NumericVector 
 
     oiff::OptimizeFilter runner;
     runner.fdr_threshold = threshold;
+    runner.retain_larger = larger;
     auto res = runner.run(n, static_cast<const double*>(pvalues.begin()), static_cast<const double*>(covariates.begin()));
 
     return Rcpp::List::create(
@@ -19,7 +20,7 @@ Rcpp::List find_optimal_filter(Rcpp::NumericVector pvalues, Rcpp::NumericVector 
 }
 
 // [[Rcpp::export(rng=false)]]
-Rcpp::List find_optimal_filter_subsample(Rcpp::NumericVector pvalues, Rcpp::NumericVector covariates, double threshold, double subsample_proportion, int num_iterations, int random_seed, int num_threads) {
+Rcpp::List find_optimal_filter_subsample(Rcpp::NumericVector pvalues, Rcpp::NumericVector covariates, double threshold, bool larger, double subsample_proportion, int num_iterations, int random_seed, int num_threads) {
     size_t n = pvalues.size();
     if (n != static_cast<size_t>(covariates.size())) {
         throw std::runtime_error("'pvalues' and 'covariates' should have the same length");
@@ -27,8 +28,9 @@ Rcpp::List find_optimal_filter_subsample(Rcpp::NumericVector pvalues, Rcpp::Nume
 
     oiff::OptimizeFilter runner;
     runner.fdr_threshold = threshold;
-    runner.num_iterations = num_iterations;
+    runner.retain_larger = larger;
     runner.subsample_proportion = subsample_proportion;
+    runner.num_iterations = num_iterations;
     runner.random_seed = random_seed;
     runner.num_threads = num_threads;
     auto res = runner.run_subsample(n, static_cast<const double*>(pvalues.begin()), static_cast<const double*>(covariates.begin()));

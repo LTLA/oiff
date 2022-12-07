@@ -124,16 +124,22 @@ std::pair<int, int> find_boundary(int location, const std::vector<Node>& tree, c
 }
 
 template<class Iterator>
-std::vector<int> order(Iterator start, size_t n) {
+std::vector<int> order(Iterator start, size_t n, bool reverse = false) {
     std::vector<int> temp;
     temp.reserve(n);
     for (size_t i = 0; i < n; ++i) {
         temp.push_back(i);
     }
 
-    std::sort(temp.begin(), temp.end(), [&](int left, int right) -> bool {
-        return *(start + left) < *(start + right);
-    });
+    if (reverse) {
+        std::sort(temp.begin(), temp.end(), [&](int left, int right) -> bool {
+            return *(start + left) > *(start + right);
+        });
+    } else {
+        std::sort(temp.begin(), temp.end(), [&](int left, int right) -> bool {
+            return *(start + left) < *(start + right);
+        });
+    }
 
     return temp;
 }
@@ -285,6 +291,12 @@ struct OptimizeFilter {
     uint64_t random_seed = 42;
 
     /**
+     * Whether the filtering should retain larger values of the filter statistic.
+     * By default, the filtering involves retaining values at or below the returned filter threshold.
+     */
+    bool retain_larger = false;
+
+    /**
      * @tparam P Floating-point type for the p-values.
      * @tparam F Arithmetic type for the filter statistic.
      *
@@ -300,7 +312,7 @@ struct OptimizeFilter {
     template<typename P, typename F>
     std::pair<F, int> run(size_t n, const P* pvalues, const F* filters) const {
         auto porder = order(pvalues, n);
-        auto corder = order(filters, n);
+        auto corder = order(filters, n, retain_larger);
         return find_optimal_filter(n, pvalues, filters, porder, corder, fdr_threshold);
     }
 
@@ -318,7 +330,7 @@ struct OptimizeFilter {
     template<typename P, typename F>
     std::vector<std::pair<F, int> > run_subsample(size_t n, const P* pvalues, const F* filters) const {
         auto porder = order(pvalues, n);
-        auto corder = order(filters, n);
+        auto corder = order(filters, n, retain_larger);
 
         std::mt19937_64 rng(random_seed);
         size_t keep = std::ceil(n * subsample_proportion);
