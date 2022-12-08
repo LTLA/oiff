@@ -29,14 +29,14 @@ std::vector<double> covariates; // fill with covariates
 oiff::OptimizeFilter runner;
 runner.fdr_threshold = 0.05;
 auto res = runner.run(pvalues.size(), pvalues.data(), covariates.data());
-res.first; // filter threshold
-res.second; // number of discoveries
+res.middle; // one choice of filter threshold
+res.number; // number of discoveries
 
 // Run with subsampling and take the average of subsample iterations.
 auto res2 = runner.run_subsample(pvalues.size(), pvalues.data(), covariates.data());
 double mean_threshold = 0;
 for (auto x : res2) {
-    mean_threshold += x.first;
+    mean_threshold += x.middle;
 }
 mean_threshold /= res2.size();
 ```
@@ -149,7 +149,8 @@ for (it in seq_along(num.discoveries)) {
 
     # Using an optimal filter threshold based on a subsample. 
     expected <- findOptimalFilter(pval, filter, threshold=0.05, above=TRUE, subsample=0.1)
-    num.discoveries[it] <- expected$number
+    keep <- filter >= expected$middle
+    num.discoveries[it] <- sum(p.adjust(pval[keep], method="BH") <= 0.05)
 }
 
 mean((num.discoveries - 1) / num.discoveries)

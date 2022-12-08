@@ -26,7 +26,8 @@ test_that("findOptimalFilter works when compared to a reference", {
     ref$threshold <- -ref$threshold
     expected <- findOptimalFilter(pvalues, filter, above=TRUE)
 
-    expect_identical(ref, expected)
+    expect_identical(ref$number, expected$number)
+    expect_identical(ref$first, expected$threshold)
 })
 
 test_that("findOptimalFilter is pretty fast", {

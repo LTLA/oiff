@@ -39,8 +39,18 @@ Only used if \code{subsample} is not \code{NULL}.}
 Only used if \code{subsample} is not \code{NULL}.}
 }
 \value{
-A list containing \code{threshold}, the threshold to apply to \code{filter};
-and \code{number}, the number of discoveries after applying the BH method at this filter threshold.
+A list containing:
+\itemize{
+\item \code{first}, the first (i.e., most stringent) filter threshold that achieves the maximum number of discoveries.
+\item \code{last}, the last (i.e., most relaxed) filter threshold that achieves the maximum number of discoveries.
+\item \code{middle}, an intermediate threshold between \code{first} and \code{last},
+approximately the median of all thresholds that achieve the maximal number of discoveries.
+In the presence of many tied thresholds, this is probably the best choice as it is more robust to the number of hypotheses.
+\item \code{number}, the maximum number of discoveries.
+}
+
+When subsampling, \code{first}, \code{last} and \code{middle} are the means of the corresponding values across iterations.
+\code{number} is not reported as it is not guaranteed to be the same for the different means.
 }
 \description{
 Find the threshold on an independent filter statistic that maximizes the number of discoveries

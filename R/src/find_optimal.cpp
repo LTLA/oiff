@@ -14,8 +14,10 @@ Rcpp::List find_optimal_filter(Rcpp::NumericVector pvalues, Rcpp::NumericVector 
     auto res = runner.run(n, static_cast<const double*>(pvalues.begin()), static_cast<const double*>(covariates.begin()));
 
     return Rcpp::List::create(
-        Rcpp::Named("threshold") = Rcpp::NumericVector::create(res.first),
-        Rcpp::Named("number") = Rcpp::IntegerVector::create(res.second)
+        Rcpp::Named("first") = Rcpp::NumericVector::create(res.first),
+        Rcpp::Named("last") = Rcpp::NumericVector::create(res.last),
+        Rcpp::Named("middle") = Rcpp::NumericVector::create(res.middle),
+        Rcpp::Named("number") = Rcpp::IntegerVector::create(res.number)
     );
 }
 
@@ -35,15 +37,19 @@ Rcpp::List find_optimal_filter_subsample(Rcpp::NumericVector pvalues, Rcpp::Nume
     runner.num_threads = num_threads;
     auto res = runner.run_subsample(n, static_cast<const double*>(pvalues.begin()), static_cast<const double*>(covariates.begin()));
 
-    Rcpp::NumericVector thresholds(num_iterations);
+    Rcpp::NumericVector first_thresholds(num_iterations), last_thresholds(num_iterations), middle_thresholds(num_iterations);
     Rcpp::IntegerVector number(num_iterations);
     for (int i = 0; i < num_iterations; ++i) {
-        thresholds[i] = res[i].first;
-        number[i] = res[i].second;
+        first_thresholds[i] = res[i].first;
+        last_thresholds[i] = res[i].last;
+        middle_thresholds[i] = res[i].middle;
+        number[i] = res[i].number;
     }
 
     return Rcpp::List::create(
-        Rcpp::Named("threshold") = thresholds,
+        Rcpp::Named("first") = first_thresholds,
+        Rcpp::Named("last") = last_thresholds,
+        Rcpp::Named("middle") = middle_thresholds,
         Rcpp::Named("number") = number
     );
 }

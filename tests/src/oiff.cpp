@@ -7,7 +7,13 @@
 
 class ScenarioTest : public ::testing::TestWithParam<std::tuple<int, int> > {
 protected:
-    static std::pair<double, int> reference(const std::vector<double>& pvalues, const std::vector<double>& covariates, double threshold) {
+    typedef oiff::OptimizeFilter::Thresholds<double> Thresholds;
+
+    std::tuple<double, double, double, int> collapse(const Thresholds& x) {
+        return std::make_tuple(x.first, x.last, x.last, x.number);
+    }
+
+    static Thresholds reference(const std::vector<double>& pvalues, const std::vector<double>& covariates, double threshold) {
         size_t nobs = pvalues.size();
         std::vector<std::pair<double, double> > combined;
         combined.reserve(nobs);
@@ -17,7 +23,7 @@ protected:
         std::sort(combined.begin(), combined.end());
 
         int max_hits = -1;
-        double filter = 0;
+        std::vector<double> best;
 
         std::vector<int> collected;
         for (size_t i = 0; i < nobs; ++i) {
@@ -40,13 +46,23 @@ protected:
                 }
             }
 
-            if (hits > max_hits || (hits == max_hits && filter < current)) {
+            if (hits > max_hits) {
+                best.clear();
                 max_hits = hits;
-                filter = current;
+                best.push_back(current);
+            } else if (hits == max_hits) {
+                best.push_back(current);
             }
         }
 
-        return std::make_pair(filter, max_hits);
+        std::sort(best.begin(), best.end());
+
+        Thresholds output;
+        output.first = best.front();
+        output.last = best.back();
+        output.middle = best[best.size() / 2];
+        output.number = max_hits;
+        return output;
     }
 };
 
@@ -69,7 +85,7 @@ TEST_P(ScenarioTest, Uniform) {
 
     auto best = oiff::OptimizeFilter().run(nobs, pvalues.data(), covariates.data());
     auto ref = reference(pvalues, covariates, 0.05);
-    EXPECT_EQ(best, ref);
+    EXPECT_EQ(collapse(best), collapse(ref));
 }
 
 TEST_P(ScenarioTest, PerfectCorrelation) {
@@ -93,7 +109,7 @@ TEST_P(ScenarioTest, PerfectCorrelation) {
 
     auto best = oiff::OptimizeFilter().run(nobs, pvalues.data(), covariates.data());
     auto ref = reference(pvalues, covariates, 0.05);
-    EXPECT_EQ(best, ref);
+    EXPECT_EQ(collapse(best), collapse(ref));
 }
 
 TEST_P(ScenarioTest, ImperfectCorrelation) {
@@ -113,7 +129,7 @@ TEST_P(ScenarioTest, ImperfectCorrelation) {
 
     auto best = oiff::OptimizeFilter().run(nobs, pvalues.data(), covariates.data());
     auto ref = reference(pvalues, covariates, 0.05);
-    EXPECT_EQ(best, ref);
+    EXPECT_EQ(collapse(best), collapse(ref));
 }
 
 TEST_P(ScenarioTest, LowerCovariates) {
@@ -140,7 +156,7 @@ TEST_P(ScenarioTest, LowerCovariates) {
 
     auto best = oiff::OptimizeFilter().run(nobs, pvalues.data(), covariates.data());
     auto ref = reference(pvalues, covariates, 0.05);
-    EXPECT_EQ(best, ref);
+    EXPECT_EQ(collapse(best), collapse(ref));
 }
 
 TEST_P(ScenarioTest, HigherCovariates) {
@@ -168,17 +184,84 @@ TEST_P(ScenarioTest, HigherCovariates) {
     oiff::OptimizeFilter runner;
     auto best = runner.run(nobs, pvalues.data(), covariates.data());
     auto ref = reference(pvalues, covariates, 0.05);
-    EXPECT_EQ(best, ref);
+    EXPECT_EQ(collapse(best), collapse(ref));
 
     // What happpens if we retain the larger values instead?
     runner.retain_larger = true;
     auto revbest = runner.run(nobs, pvalues.data(), covariates.data());
+
     for (auto& x : covariates) {
         x *= -1;
     }
     auto revref = reference(pvalues, covariates, 0.05);
     revref.first *= -1;
-    EXPECT_EQ(revbest, revref);
+    revref.middle *= -1;
+    revref.last *= -1;
+
+    EXPECT_EQ(collapse(revbest), collapse(revref));
+}
+
+TEST_P(ScenarioTest, ManyZeros) {
+    auto param = GetParam();
+    size_t nobs = std::get<0>(param);
+    int seed = std::get<1>(param);
+
+    std::mt19937_64 rng(seed);
+    std::uniform_real_distribution udist;
+    std::normal_distribution ndist;
+
+    // Spike in with loads of zeros as forced true positives.
+    size_t nulls = nobs * 0.8;
+    std::vector<double> pvalues(nobs - nulls), covariates(nobs - nulls, 10);
+    for (size_t i = 0; i < nulls; ++i) {
+        pvalues.push_back(udist(rng));
+        covariates.push_back(ndist(rng));
+    }
+
+    oiff::OptimizeFilter runner;
+    auto best = runner.run(nobs, pvalues.data(), covariates.data());
+    auto ref = reference(pvalues, covariates, 0.05);
+    EXPECT_EQ(collapse(best), collapse(ref));
+}
+
+TEST_P(ScenarioTest, Ties) {
+    auto param = GetParam();
+    size_t nobs = std::get<0>(param);
+    int seed = std::get<1>(param);
+
+    std::mt19937_64 rng(seed);
+    std::uniform_real_distribution udist;
+    std::normal_distribution ndist;
+
+    std::vector<double> pvalues, covariates;
+    size_t nulls = nobs * 0.75;
+
+    // Smaller p-values associated with higher covariates, but injecting ties.
+    for (size_t i = 0; i < nobs - nulls; ++i) {
+        if (i && udist(rng) <= 0.1) {
+            pvalues.push_back(pvalues.back());
+            covariates.push_back(covariates.back());
+        } else {
+            pvalues.push_back(udist(rng)/50);
+            covariates.push_back(ndist(rng) + 1);
+        }
+    }
+
+    // Adding lots of tied values.
+    for (size_t i = 0; i < nulls; ++i) {
+        if (i && udist(rng) <= 0.1) {
+            pvalues.push_back(pvalues.back());
+            covariates.push_back(covariates.back());
+        } else {
+            pvalues.push_back(udist(rng));
+            covariates.push_back(ndist(rng));
+        }
+    }
+
+    oiff::OptimizeFilter runner;
+    auto best = runner.run(nobs, pvalues.data(), covariates.data());
+    auto ref = reference(pvalues, covariates, 0.05);
+    EXPECT_EQ(collapse(best), collapse(ref));
 }
 
 TEST_P(ScenarioTest, Subsampling) {
@@ -206,7 +289,7 @@ TEST_P(ScenarioTest, Subsampling) {
     // Checking against the reference just in case.
     auto best = oiff::OptimizeFilter().run(nobs, pvalues.data(), covariates.data());
     auto ref = reference(pvalues, covariates, 0.05);
-    EXPECT_EQ(best, ref);
+    EXPECT_EQ(collapse(best), collapse(ref));
 
     // Checking against subsampling with 100% retention.
     {
@@ -215,7 +298,7 @@ TEST_P(ScenarioTest, Subsampling) {
         runner.num_iterations = 1;
         auto res = runner.run_subsample(nobs, pvalues.data(), covariates.data());
         EXPECT_EQ(res.size(), 1);
-        EXPECT_EQ(best, res[0]);
+        EXPECT_EQ(collapse(best), collapse(res[0]));
     }
 
     // Checking against subsampling with 50% retention.
@@ -243,12 +326,14 @@ TEST_P(ScenarioTest, Subsampling) {
             }
 
             auto manual = runner.run(subp.size(), subp.data(), subc.data());
-            EXPECT_EQ(manual, res[it]);
+            EXPECT_EQ(collapse(manual), collapse(res[it]));
         }
 
         runner.num_threads = 3;
         auto par = runner.run_subsample(nobs, pvalues.data(), covariates.data());
-        EXPECT_EQ(par, res);
+        for (int it = 0; it < runner.num_iterations; ++it) {
+            EXPECT_EQ(collapse(par[it]), collapse(res[it]));
+        }
     }
 }
 
