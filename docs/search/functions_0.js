@@ -1,5 +1,5 @@
 var searchData=
 [
-  ['run_0',['run',['../structoiff_1_1OptimizeFilter.html#ae4f78a279b7a3c22d0cf8f9dba44f9b3',1,'oiff::OptimizeFilter']]],
-  ['run_5fsubsample_1',['run_subsample',['../structoiff_1_1OptimizeFilter.html#aff766441d0234075a24d79c89ea80bab',1,'oiff::OptimizeFilter']]]
+  ['run_0',['run',['../structoiff_1_1OptimizeFilter.html#ad2765a36431af912c8c81637c167b946',1,'oiff::OptimizeFilter']]],
+  ['run_5fsubsample_1',['run_subsample',['../structoiff_1_1OptimizeFilter.html#a7ccfc8d5907fd21cc3ab34a82311fff2',1,'oiff::OptimizeFilter']]]
 ];
